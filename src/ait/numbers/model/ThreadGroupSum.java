@@ -1,5 +1,6 @@
 package ait.numbers.model;
 
+import ait.numbers.task.OneGroupSum;
 public class ThreadGroupSum extends GroupSum {
     public ThreadGroupSum(int[][] numberGroups) {
         super(numberGroups);
@@ -7,41 +8,29 @@ public class ThreadGroupSum extends GroupSum {
 
     @Override
     public int computeSum() {
-        final int[] halfSum = new int[2];
+        int tasksNumber = numberGroups.length;
+        OneGroupSum[] task = new OneGroupSum[tasksNumber];
+        Thread[] thread = new Thread[tasksNumber];
 
-        Thread t1 = new Thread(() -> {
-            int sum = 0;
-            for (int i = 0; i < numberGroups.length / 2; i++) {
-                for (int num : numberGroups[i]) {
-                    sum += num;
-                }
-            }
-            halfSum[0] = sum;
+        for (int i = 0; i < tasksNumber; i++) {
+            task[i] = new OneGroupSum(numberGroups[i]);
+            thread[i] = new Thread(task[i]);
+            thread[i].start();
         }
-        );
-
-        Thread t2 = new Thread(() -> {
-            int sum = 0;
-            for (int i = numberGroups.length / 2; i < numberGroups.length; i++) {
-                for (int num : numberGroups[i]) {
-                    sum += num;
-                }
-            }
-            halfSum[1] = sum;
-        }
-        );
-
-        t1.start();
-        t2.start();
 
         try {
-            t1.join();
-            t2.join();
+            for (int i = 0; i < thread.length; i++) {
+                thread[i].join();
+            }
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
 
-        return halfSum[0] + halfSum[1];
-    }
+        int sum = 0;
+        for (OneGroupSum t : task) {
+            sum += t.getSum();
+        }
 
+        return sum;
+    }
 }
